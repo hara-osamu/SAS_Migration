@@ -216,19 +216,32 @@ sell_ken_df = sales_new_df.join(ken_all_name_df, ["送り先郵便番号"], "lef
 
 # COMMAND ----------
 
-import pandas
-import io
-import os
+# pandasを使わずにExcelを読み込めたので廃止
+# import pandas
+# import io
+# import os
 
-df = (spark
-      .read
-      .format("binaryFile")
+# df = (spark
+#       .read
+#       .format("binaryFile")
+#       .load(f"file:{os.getcwd()}/ken_area.xlsx")
+#      )
+
+# bstream = io.BytesIO(df.select("content").collect()[0].content)
+# pdf = pandas.read_excel(bstream)
+# ken_area_df = spark.createDataFrame(pdf)
+
+# COMMAND ----------
+
+# クラスターにMavenからcom.crealytics:excel_2.12をインストールする必要あり
+import os
+df = (spark.read
+      .format("com.crealytics.spark.excel")
+      .option("header", "true")
+#       .option("inferSchema","true")
       .load(f"file:{os.getcwd()}/ken_area.xlsx")
      )
-
-bstream = io.BytesIO(df.select("content").collect()[0].content)
-pdf = pandas.read_excel(bstream)
-ken_area_df = spark.createDataFrame(pdf)
+display(df)
 
 # COMMAND ----------
 
