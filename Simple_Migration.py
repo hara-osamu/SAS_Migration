@@ -6,7 +6,15 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install openpyxl
+# %pip install openpyxl
+
+# COMMAND ----------
+
+# データ準備系
+# import os
+# spark.read.format("csv").option("header","true").option("inferschema","true").option('charset', 'shift-jis').load(f"file:{os.getcwd()}/sales_transform.csv").write.format("delta").mode("overwrite").saveAsTable("default.sales_transform")
+# spark.read.table("default.sales_transform").write.format("delta").mode("overwrite").saveAsTable("default.sales_transform_copy")
+# spark.read.table("default.sales_transform_copy").write.format("delta").mode("overwrite").saveAsTable("default.sales_transform")
 
 # COMMAND ----------
 
@@ -41,7 +49,7 @@ from pyspark.sql.functions import max
 sales_transform_df = spark.read.table("default.sales_transform")
 max_year = sales_transform_df.agg(max("年")).head()[0]
 max_month = sales_transform_df.agg(max("月")).head()[0]
-max_ym = str(max_year).zfill(4) + str(max_month).zfill(2)
+max_ym = str(max_year or "").zfill(4) + str(max_month or "").zfill(2)
 
 # COMMAND ----------
 
@@ -526,7 +534,6 @@ sell_area_ym_cross_df = (sell_area_distinct_df
 
 # COMMAND ----------
 
-# 時系列に投げ込むために列追加
 from pyspark.sql.functions import coalesce
 sales_fix_df = (sell_area_ym_cross_df
                 .join(sales_transform_df, ["機種名","色","地方","年","月"], "left_outer")
