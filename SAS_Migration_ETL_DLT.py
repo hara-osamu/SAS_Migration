@@ -4,21 +4,15 @@
 # MAGIC   
 # MAGIC 所感
 # MAGIC - 基本的にPythonコードそのまま移植できる。
-# MAGIC - タイポでのエラーを数回やらかす。
 # MAGIC - EGからそのままなら、基本SQLそのまま移植の方が楽か？
-# MAGIC - Pythonと違って上で定義した変数のそのまま利用ができないので、使い回す場合は再計算？グローバル化できる？
-# MAGIC - importも使い回せないので頭でまとめて定義しておく方が吉か。
 # MAGIC - dlt.readで返ってくるのが厳密にはdataframeではない？そのままaggとか噛ますとうまく動かない（Noneが返ってくる）
-# MAGIC - 最後の登録処理や途中でテーブルに書き込む処理の書き方。（defの中にwrite.format("delta").saveAsTable(xxx)を書いてしまって良い？）
-# MAGIC - insert命令がグラフに組み込まれていないため順番が狂っている？
-# MAGIC - 対応策としてapply_changeを使おうとするが、これはlive tableにしか使えない模様？
-# MAGIC - 「元データにないデータのみ取得して処理をして、元データに追記」という処理をしようとした場合、元データが0件になってしまう。原因が分からないので来週聞く。
-# MAGIC - SASではありがちな処理であること、単純なNotebookでは起きなかった事からDLTの処理起因っぽいが、、不明。
-# MAGIC - 別のNotebookを挟んでETL処理を2段階（＋INSERT）にすればひとまずの解決にはなりそう。
+# MAGIC - 上記の対応のためにspark.read.tableを使うと、そこより前のdltの処理が反映される前のテーブルの情報を取ってきてしまう？
+# MAGIC 
+# MAGIC →打合せ時に要仕様確認。（最悪2つにDLTを分割すれば解決するが・・・）
 
 # COMMAND ----------
 
-import dlt
+import dltData
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 from pyspark.sql.functions import max, min, year, month, col, concat, format_string, lit, to_date, coalesce
@@ -144,6 +138,7 @@ def ym():
 @dlt.table
 def ym_range_fix():
     dlt.read("ym") #順番操作用
+    # ここでCmd11の結果のsales_transformが本来は欲しいが、どうも実行前のテーブル内容を取得している様子。
     ym_df = (spark.read.table("sales_transform")
              .select("年","月")
              .distinct()
